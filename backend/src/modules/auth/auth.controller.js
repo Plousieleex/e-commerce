@@ -1,7 +1,23 @@
 import catchAsync from '../../utils/catchAsync.js';
 import authService from './auth.service.js';
 
-export const signup = catchAsync(async (req, res, next) => {});
+export const signup = catchAsync(async (req, res, next) => {
+  const { nameSurname, email, phoneNumber, password, passwordConfirm } =
+    req.body;
+
+  const user = await authService.signup({
+    nameSurname,
+    email,
+    phoneNumber,
+    password,
+    passwordConfirm,
+  });
+
+  res.status(201).json({
+    status: 'success',
+    data: { user },
+  });
+});
 
 export const loginEmailPassword = catchAsync(async (req, res, next) => {});
 

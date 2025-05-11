@@ -20,7 +20,7 @@ enum UserRole {
   USER
 }
 
-model User {
+model Users {
   id                     Int       @id @unique @default(autoincrement())
   nameSurname            String
   email                  String    @unique

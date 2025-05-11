@@ -8,6 +8,7 @@ export const authSchema = z
     password: z.string().min(8),
     passwordConfirm: z.string(),
   })
+  .strict()
   .refine((data) => data.password === data.passwordConfirm, {
     message: "Passwords don't match.",
     path: ['passwordConfirm'],
