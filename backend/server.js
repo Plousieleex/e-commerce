@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-// import prisma
+import prisma from './src/config/db.js';
 
 process.on('uncaughtException', () => {
   process.exit(1);
