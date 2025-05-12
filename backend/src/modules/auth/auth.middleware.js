@@ -1,6 +1,6 @@
-import catchAsync from '../../utils/catchAsync';
+import catchAsync from '../../utils/catchAsync.js';
 
-export const validateAuthSchema = (schema) => {
+export const validateAuthSchema = (schema) =>
   catchAsync(async (req, res, next) => {
     const result = schema.safeParse(req.body);
     if (!result.success) {
@@ -23,7 +23,6 @@ export const validateAuthSchema = (schema) => {
     req.body = result.data;
     next();
   });
-};
 
 export default {
   validateAuthSchema,
