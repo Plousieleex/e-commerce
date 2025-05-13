@@ -1,5 +1,6 @@
 import catchAsync from '../../utils/catchAsync.js';
 import authService from './auth.service.js';
+import sms from '../../utils/sms.js';
 
 export const signup = catchAsync(async (req, res, next) => {
   const { nameSurname, email, phoneNumber, password, passwordConfirm } =
@@ -71,10 +72,24 @@ export const loginPhonePassword = catchAsync(async (req, res, next) => {
 
 export const sendSixDigitTokenSMS = catchAsync(async (req, res, next) => {
   // Need to implement SMS System
+  const phoneNumber = req.body.phoneNumber;
+
+  await sms.createVerification(phoneNumber);
+
+  res.status(201).json({
+    status: 'success',
+  });
 });
 
 export const checkSixDigitTokenLogin = catchAsync(async (req, res, next) => {
   // Need to implement SMS System
+  const { code, phoneNumber } = req.body;
+
+  await sms.createVerificationCheck(code, phoneNumber);
+
+  res.status(201).json({
+    status: 'success',
+  });
 });
 
 export default {
@@ -84,4 +99,5 @@ export default {
   resendActivationCode,
   sendSixDigitTokenSMS,
   checkSixDigitTokenActivate,
+  checkSixDigitTokenLogin,
 };

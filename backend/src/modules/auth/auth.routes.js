@@ -16,4 +16,9 @@ router.route('/activate').post(authController.checkSixDigitTokenActivate);
 
 router.route('/resend').post(authController.resendActivationCode);
 
+router.route('/verification').post(authController.sendSixDigitTokenSMS);
+router
+  .route('/verification/check')
+  .post(authController.checkSixDigitTokenLogin);
+
 export default router;
