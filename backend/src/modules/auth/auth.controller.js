@@ -32,23 +32,56 @@ export const checkSixDigitTokenActivate = catchAsync(async (req, res, next) => {
   });
 });
 
-export const sendSixDigitTokenEmail = catchAsync(async (req, res, next) => {
+export const resendActivationCode = catchAsync(async (req, res, next) => {
   const email = req.body.email;
+
+  const user = await authService.resendActivationCode(email);
+
+  res.status(201).json({
+    status: 'success',
+    data: { user },
+  });
 });
 
-export const loginEmailPassword = catchAsync(async (req, res, next) => {});
+export const loginEmailPassword = catchAsync(async (req, res, next) => {
+  const email = req.body.email;
+  const password = req.body.password;
 
-export const loginPhonePassword = catchAsync(async (req, res, next) => {});
+  const { user, token } = authService.loginEmailPassword(email, password);
 
-export const sendSixDigitTokenSMS = catchAsync(async (req, res, next) => {});
+  res.status(201).json({
+    status: 'success',
+    token,
+    data: { user },
+  });
+});
 
-export const checkSixDigitTokenLogin = catchAsync(async (req, res, next) => {});
+export const loginPhonePassword = catchAsync(async (req, res, next) => {
+  const phoneNumber = req.body.phoneNumber;
+  const password = req.body.password;
+
+  const { user, token } = authService.loginPhonePassword(phoneNumber, password);
+
+  res.status(201).json({
+    status: 'success',
+    token,
+    data: { user },
+  });
+});
+
+export const sendSixDigitTokenSMS = catchAsync(async (req, res, next) => {
+  // Need to implement SMS System
+});
+
+export const checkSixDigitTokenLogin = catchAsync(async (req, res, next) => {
+  // Need to implement SMS System
+});
 
 export default {
   signup,
   loginEmailPassword,
   loginPhonePassword,
-  sendSixDigitTokenEmail,
+  resendActivationCode,
   sendSixDigitTokenSMS,
   checkSixDigitTokenActivate,
 };

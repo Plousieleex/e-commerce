@@ -120,7 +120,131 @@ export const activateUser = async (email, code) => {
   }
 };
 
+export const resendActivationCode = async (email) => {
+  const userRecord = await prisma.Users.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      activationTokenExpires: true,
+      isActivated: true,
+      userActive: true,
+    },
+  });
+
+  if (!userRecord) {
+    throw new AppError('No user found.', 404);
+  }
+
+  if (userRecord.isActivated || userRecord.userActive) {
+    throw new AppError('User is active.', 400);
+  }
+
+  const { finalRandomCode, hashedFinalRandomCode } =
+    await resetTokens.createSixDigitToken();
+
+  const activationToken = `Activation code resent: ${finalRandomCode}`;
+
+  try {
+    const updatedUser = await prisma.Users.update({
+      where: { id: userRecord.id },
+      data: {
+        activationToken: hashedFinalRandomCode,
+        activationTokenExpires: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+
+    await sendEmail({
+      email: updatedUser.email,
+      subject: 'Activation Code Resend',
+      message: `${activationToken}`,
+    });
+
+    return updatedUser;
+  } catch (e) {
+    throw new AppError('Internal Server Error.', 500);
+  }
+};
+
+export const loginEmailPassword = async (email, password) => {
+  if (!email || !password) {
+    throw new AppError('Provide your email or password.', 400);
+  }
+
+  const userRecord = prisma.Users.findUnique({
+    where: { email },
+  });
+
+  if (!userRecord || !(await bcrypt.compare(password, userRecord.password))) {
+    throw new AppError('Invalid credentials.', 400);
+  }
+
+  if (!userRecord.isActivated) {
+    throw new AppError('Activate your account to login.', 400);
+  }
+
+  let userToReturn = userRecord;
+  if (!userRecord.userActive) {
+    try {
+      userToReturn = await prisma.Users.update({
+        where: { id: userRecord.id },
+        data: {
+          userActive: true,
+          // deletedAt or inactivatedAt: null
+          // lastLogoutAt: null
+        },
+      });
+    } catch (e) {
+      throw new AppError('Internal Server Error.', 500);
+    }
+  }
+
+  const token = jwt.signTokenLocal(userToReturn.id, userToReturn.userRole);
+
+  return { user: userToReturn, token };
+};
+
+export const loginPhonePassword = async (phoneNumber, password) => {
+  if (!phoneNumber || !password) {
+    throw new AppError('Provide your phone number or password.');
+  }
+
+  const userRecord = await prisma.Users.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (!userRecord || !(await bcrypt.compare(password, userRecord.password))) {
+    throw new AppError('Invalid Credentials.', 400);
+  }
+
+  if (!userRecord.isActivated) {
+    throw new AppError('Please activate your account.', 400);
+  }
+
+  let userToReturn = userRecord;
+  if (!userRecord.userActive) {
+    try {
+      userToReturn = await prisma.Users.update({
+        where: { id: userRecord.id },
+        data: {
+          userActive: true,
+          // deletedAt or inactiveAt: null
+          // lastLogoutAt: null
+        },
+      });
+    } catch (e) {
+      throw new AppError('Internal Server Error.', 500);
+    }
+  }
+
+  const token = jwt.signTokenLocal(userToReturn.id, userToReturn.userRole);
+
+  return { user: userToReturn, token };
+};
+
 export default {
   signup,
   activateUser,
+  resendActivationCode,
+  loginEmailPassword,
+  loginPhonePassword,
 };

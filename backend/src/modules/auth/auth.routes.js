@@ -14,4 +14,6 @@ router
 
 router.route('/activate').post(authController.checkSixDigitTokenActivate);
 
+router.route('/resend').post(authController.resendActivationCode);
+
 export default router;
