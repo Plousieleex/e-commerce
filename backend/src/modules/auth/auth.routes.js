@@ -12,4 +12,6 @@ router
     authController.signup
   );
 
+router.route('/activate').post(authController.checkSixDigitTokenActivate);
+
 export default router;

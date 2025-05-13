@@ -1,9 +1,11 @@
 import prisma from '../../config/db.js';
 import bcrypt from 'bcrypt';
-// import jwt from '../../utils/jwt.js';
+import jwt from '../../utils/jwt.js';
 import resetTokens from '../../utils/resetTokens.js';
 import AppError from '../../utils/AppError.js';
 import sendEmail from '../../utils/email.js';
+import crypto from 'crypto';
+import { nanoid } from 'nanoid';
 
 export const signup = async ({
   nameSurname,
@@ -57,7 +59,7 @@ export const signup = async ({
     });
 
     // JWT after user activates account, not here!
-    return { newUser };
+    return newUser;
   } catch (e) {
     console.log(e);
     await prisma.Users.deleteMany({ where: { email } });
@@ -66,6 +68,59 @@ export const signup = async ({
   }
 };
 
+export const activateUser = async (email, code) => {
+  if (!code) {
+    throw new AppError('Provide the code.', 404);
+  }
+
+  const userRecord = await prisma.Users.findUnique({
+    where: { email },
+    select: {
+      id: true,
+      isActivated: true,
+      activationToken: true,
+      activationTokenExpires: true,
+    },
+  });
+
+  if (!userRecord) {
+    throw new AppError('No user found.', 404);
+  }
+
+  if (userRecord.isActivated) {
+    throw new AppError('User is already activated.', 400);
+  }
+
+  const hashedToken = crypto.createHash('sha256').update(code).digest('hex');
+
+  if (
+    userRecord.activationTokenExpires < new Date() ||
+    !(hashedToken === userRecord.activationToken)
+  ) {
+    throw new AppError('Code is invalid or expired.', 410);
+  }
+
+  try {
+    const activatedUser = await prisma.Users.update({
+      where: { id: userRecord.id },
+      data: {
+        userActive: true,
+        isActivated: true,
+        activationToken: null,
+        activationTokenExpires: null,
+      },
+    });
+
+    const token = jwt.signTokenLocal(activatedUser.id, activatedUser.userRole);
+
+    return { user: activatedUser, token };
+  } catch (e) {
+    console.log(e);
+    throw new AppError('Internal Server Error.', 500);
+  }
+};
+
 export default {
   signup,
+  activateUser,
 };

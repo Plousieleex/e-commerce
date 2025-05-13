@@ -12,6 +12,16 @@ export async function createSixDigitToken() {
   return { finalRandomCode, hashedFinalRandomCode };
 }
 
+export async function createActivationToken() {
+  const activationToken = crypto.randomBytes(32).toString('hex');
+  const hashedActivationToken = crypto
+    .createHash('sha512')
+    .update(activationToken)
+    .digest('hex');
+
+  return { activationToken, hashedActivationToken };
+}
+
 export default {
   createSixDigitToken,
 };
