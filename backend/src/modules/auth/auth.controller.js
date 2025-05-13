@@ -74,7 +74,7 @@ export const sendSixDigitTokenSMS = catchAsync(async (req, res, next) => {
   // Need to implement SMS System
   const phoneNumber = req.body.phoneNumber;
 
-  await sms.createVerification(phoneNumber);
+  await authService.sendSixDigitTokenSMS(phoneNumber);
 
   res.status(201).json({
     status: 'success',
@@ -85,10 +85,15 @@ export const checkSixDigitTokenLogin = catchAsync(async (req, res, next) => {
   // Need to implement SMS System
   const { code, phoneNumber } = req.body;
 
-  await sms.createVerificationCheck(code, phoneNumber);
+  const { user, token } = await authService.checkSixDigitTokenLogin(
+    code,
+    phoneNumber
+  );
 
   res.status(201).json({
     status: 'success',
+    token,
+    data: { user },
   });
 });
 

@@ -5,7 +5,7 @@ import resetTokens from '../../utils/resetTokens.js';
 import AppError from '../../utils/AppError.js';
 import sendEmail from '../../utils/email.js';
 import crypto from 'crypto';
-import { nanoid } from 'nanoid';
+import sms from '../../utils/sms.js';
 
 export const signup = async ({
   nameSurname,
@@ -241,10 +241,85 @@ export const loginPhonePassword = async (phoneNumber, password) => {
   return { user: userToReturn, token };
 };
 
+export const sendSixDigitTokenSMS = async (phoneNumber) => {
+  if (!phoneNumber) {
+    throw new AppError('Provide your phone number.', 404);
+  }
+
+  const userRecord = await prisma.Users.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (!userRecord) {
+    throw new AppError('No user found.', 404);
+  }
+
+  if (!userRecord.isActivated) {
+    throw new AppError('Please activate your account to login.', 400);
+  }
+
+  try {
+    const verification = await sms.createVerification(userRecord.phoneNumber);
+    if (verification.valid) return;
+  } catch (e) {
+    throw new AppError('Internal Server Error.', 500);
+  }
+};
+
+export const checkSixDigitTokenLogin = async (code, phoneNumber) => {
+  if (!phoneNumber || !code) {
+    throw new AppError('Provide your credentials.', 404);
+  }
+
+  const userRecord = await prisma.Users.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (!userRecord) {
+    throw new AppError('No user found.');
+  }
+
+  if (!userRecord.isActivated) {
+    throw new AppError('Please activate your account to login.', 400);
+  }
+
+  try {
+    let userToReturn = userRecord;
+
+    const verificationCheck = await sms.createVerificationCheck(
+      code,
+      phoneNumber
+    );
+    if (verificationCheck.valid) {
+      if (!userRecord.userActive) {
+        userToReturn = await prisma.Users.update({
+          where: { id: userRecord.id },
+          data: {
+            userActive: true,
+            // deletedAt or inactiveAt: null
+            // lastLogoutAt: null
+          },
+        });
+      }
+
+      const token = jwt.signTokenLocal(userToReturn.id, userToReturn.userRole);
+
+      return { user: userToReturn, token };
+    } else {
+      throw new AppError('Verification failed.', 400);
+    }
+  } catch (e) {
+    if (e instanceof AppError) throw e;
+    throw new AppError('Internal Server Error.', 500);
+  }
+};
+
 export default {
   signup,
   activateUser,
   resendActivationCode,
   loginEmailPassword,
   loginPhonePassword,
+  sendSixDigitTokenSMS,
+  checkSixDigitTokenLogin,
 };

@@ -10,7 +10,7 @@ export async function createVerification(phoneNumber) {
     .services(process.env.TWILIO_SERVICE_SID)
     .verifications.create({ channel: 'sms', to: phoneNumber });
 
-  console.log(verification);
+  return verification;
 }
 
 export async function createVerificationCheck(code, phoneNumber) {
@@ -18,7 +18,7 @@ export async function createVerificationCheck(code, phoneNumber) {
     .services(process.env.TWILIO_SERVICE_SID)
     .verificationChecks.create({ code: code, to: phoneNumber });
 
-  console.log(verificationCheck);
+  return verificationCheck;
 }
 
 export default {
